@@ -1,0 +1,38 @@
+import datetime
+now = datetime.datetime.now()
+now_set = [now.year, now.month, now.day, now.hour, now.minute, now.second]
+
+print(f"{now.year}년 {now.month}월 {now.day}일 {now.hour}시 {now.minute}분 {now.second}초")
+
+
+
+if now.hour < 12:
+    print(f"현재 시간은 오전 {now.hour}시 입니다.")
+
+if now.hour > 12:
+    print(f"현재 시간은 오후 {now.hour}시 입니다.")
+
+if 2 < now.month < 6:
+    print(f"현재 계절은 따뜻한 바람이 살랑이는 {now.month}월 입니다.")
+
+if 5 < now.month < 9:
+    print(f"현재 계절은 청량함이 생각나는 {now.month}월 입니다.")
+
+if 9 <= now.month <= 11:
+    print(f"현재 계절은 그리운 너가 생각나는 {now.month}월 입니다.")
+
+if 12 <= now.month <= 2:
+    print(f"현재 계절은 내가 제일 좋아하는 {now.month}월 입니다.")
+
+number  = int(input("일단 입력을 하시고요 근데 정수만 하시고요"))
+
+if number > 0:
+    print(f"일단 {number}은 양수이고요")
+
+if number < 0:
+    print(f"응 아니야 {number}은 음수입니다")
+
+if number == 0:
+    print(f"아 개똑같죠 뭐가 뭔지 하나도 모르겠죠")
+
+print(number)
