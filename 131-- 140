@@ -1,0 +1,51 @@
+# 131
+# 사과
+# 귤
+# 수박
+
+# 132
+#####
+#####
+#####
+
+# 133
+# print("A")
+# print("B")
+# print("C")
+#
+# # 134
+# print("출력: A")
+# print("출력: B")
+# print("출력: C")
+
+# 135
+# print("변환:", "A".lower())
+# print("변환:", "B".lower())
+# print("변환:", "C".lower())
+
+# 136
+# 변수 = [10,20,30]
+# for s in 변수:
+#     print(s)
+
+# 137
+# carrera = [10,20,30]
+# for porshce in carrera:
+#     print(porshce)
+
+# 138
+# m4 = [10,20,30]
+# for bmw in m4:
+#     print(bmw)
+#     print("------")
+
+# 139
+# print("++++")
+# c63 = [10,20,30]
+# for AMG in c63:
+#     print(AMG)
+
+# 140
+# Rs = ["-----"]*4
+# for Audi in Rs:
+#     print(Audi)
