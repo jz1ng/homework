@@ -1,0 +1,58 @@
+# 141
+
+# B = [100,200,300]
+# for A in B:
+#     print( A + 10)
+
+# 142
+
+# lamen = ["김밥", "라면", "튀김"]
+# for bunsik in lamen:
+#  print("오늘의 메뉴는:", bunsik)
+
+# 143
+
+# jusik = ["SK하이닉스", "삼성전자", "LG전자"]
+# for whatismine in jusik:
+#   print(len(whatismine))
+
+# 144
+
+# pet = ['dog', 'cat', 'parrot']
+# for shipcm in pet:
+#   print(shipcm, len(shipcm))
+
+# 145
+
+# pet2 = ['dog', 'cat', 'parrot']
+# for 권장렬 in pet2:
+#   print(권장렬[0])
+
+# 146
+
+# sutja = [1, 2, 3]
+# for fx in sutja:
+#   print("3 x", fx)
+
+# 147
+
+# bx = [1, 2, 3]
+# for ax in bx:
+#   print("3 x", ax, "=", 3 *ax)
+
+# 148
+
+# ff = ["가", "나", "다", "라"]
+# for cx in ff[1:]:
+#   print(cx)
+
+# 149
+# ff2 = ["가", "나", "다", "라"]
+# for cx2 in ff2[: :2]:
+#   print(cx2)
+
+# 150
+
+ff3 = ["가", "나", "다", "라"]
+for cx3 in ff3[:-1]:
+  print(cx3)
