@@ -1,0 +1,151 @@
+# 151
+# 리스트에는 네 개의 정수가 저장돼 있다.
+#
+# 리스트 = [3, -20, -3, 44]
+# for문을 사용해서 리스트의 음수를 출력하라.
+#
+# -20
+# -3
+
+# list1 = [3, -20, -3, 44]
+# for gwalho in list1 :
+#     if gwalho < 0:
+#         print(gwalho)
+
+# 152
+# for문을 사용해서 3의 배수만을 출력하라.
+#
+# 리스트 = [3, 100, 23, 44]
+# 3
+
+# list2 = [3, 100, 23, 24]
+# for gwalho2 in list2:
+#     if gwalho2% 3 ==0:
+#         print(gwalho2)
+
+# 153
+# 리스트에서 20 보다 작은 3의 배수를 출력하라
+#
+# 리스트 = [13, 21, 12, 14, 30, 18]
+# 12
+# 18
+
+# list3 = [13, 21, 12, 14, 30, 18]
+# for gwalho3 in list3:
+#     if (gwalho3 < 20) and (gwalho3 % 3 == 0):
+#         print(gwalho3)
+
+# 154
+# 리스트에서 세 글자 이상의 문자를 화면에 출력하라
+#
+# 리스트 = ["I", "study", "python", "language", "!"]
+# study
+# python
+# language
+
+# A4 = ["I", "study", "python", "language", "!"]
+# for gw in A4:
+#     if len(gw) > 3 :
+#         print(gw)
+
+# 155
+# 리스트에서 대문자만 화면에 출력하라.
+#
+# 리스트 = ["A", "b", "c", "D"]
+# A
+# D
+
+# A5 = ["A","b","c","D"]
+# for gw2 in A5:
+#     if gw2 == gw2.upper():
+#         print(gw2)
+
+# 156
+# 리스트에서 소문자만 화면에 출력하라.
+#
+# 리스트 = ["A", "b", "c", "D"]
+# b
+# c
+
+# A6 = ["A","b","c","D"]
+# for gw3 in A6:
+#     if gw3 != gw3.upper():
+#         print(gw3)
+
+# 157
+# 이름의 첫 글자를 대문자로 변경해서 출력하라.
+#
+# 리스트 = ['dog', 'cat', 'parrot']
+# Dog
+# Cat
+# Parrot
+
+# A7 = ['dog', 'cat' , 'parrot']
+# for gw4 in A7:
+#     print(gw4[0].upper())
+
+# 158
+# 파일 이름이 저장된 리스트에서 확장자를 제거하고 파일 이름만 화면에 출력하라. (힌트: split() 메서드)
+#
+# 리스트 = ['hello.py', 'ex01.py', 'intro.hwp']
+# hello
+# ex01
+# intro
+
+# A8 = ['hello.py', 'ex01.py', 'intro.hwp']
+
+# a = "hello.py"
+#
+# b = a.split(".")
+# print(b[0])
+
+
+
+
+
+
+
+# 2.
+# list_b = [7011, 23, 703, 661, 5, 80, 58, 60]
+# for i in list_b:
+#     if i>= 100:
+#         print(i)
+
+
+# 3-1.
+# list_c = [7011, 23, 703, 661, 5, 80, 58, 60]
+# for ix in list_c:
+#     if ix% 2== 0:
+#         print(ix,"은/는 짝수입니다")
+#     else:
+#         print(ix,"은/는 홀수입니다")
+
+# 3-2.
+# list_x = [7011, 23, 703, 661, 5, 80, 58, 60]
+# for itx in list_x:
+#     print(f"{itx}은/는 {len(str(itx))}자릿수 입니다.")
+
+
+
+
+
+#심화문제
+
+# ph = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+# output = [[], []]
+# for z in ph:
+#     if z % 2 == 0:
+#         output[0].append(z)
+#     else:
+#         output[1].append(z)
+# print(output)
+
+
+
+# 심화문제2
+scl = [90, 45 , 70 , 60, 55]
+for st in scl:
+    if st >= 60:
+        print(f"{}번째 학생은 합격")
+    else:
+        print(f"{}점 맞은 학생은 불합격")
