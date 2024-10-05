@@ -1,0 +1,35 @@
+# """
+# 컴퓨터가 1에서 50 사이의 숫자를 랜덤하게 내고 그걸 맞추면 이기는 게임
+# """
+# from random import randint
+# print("Welcome to my game")
+# pc_choice = randint(1,5)
+# user = int(input("write any number between 1 and 5: "))
+# if pc_choice == user :
+#     print("u r correct! you actually won!", pc_choice)
+# elif pc_choice < user:
+#     print("no way, it almost close", pc_choice)
+# else:
+#     print("bro r u kidding me?", pc_choice)
+
+# score_list = [90, 45, 70, 60, 55]
+# for i in score_list:
+#     num = 0
+#     if i >= 60:
+#         print(f"{num}번 학생은 합격일까아닐까")
+#         num += 1
+#     else:
+#         print(f"{num}번 학생은 연필을 내려놓으시고 그대로 수험장을 떠나주시면 되겠습니다")
+#         num += 1
+
+"DIABLO II"
+
+character = {
+    "class" : "knight",
+    "level" : 30,
+    "items" : {
+        "weapon" : "eettin axe",
+        "armor" : "ornate plate",
+        "shield" : "pasive"
+},
+    "skill" : ["charge", "blessed hammer", "fist of heaven"]
