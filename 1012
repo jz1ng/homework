@@ -1,0 +1,138 @@
+# character = {
+#         "class" : "knight",
+#         "lever" : 30,
+#         "items" : {
+#             "weapon" : "ettin axe",
+#             "armor" : "ornate plate",
+#             "shield" : "pavise"},
+#     "skill" : ["charge", "blessed hammer", "fist of heaven"]}
+#
+# for key in character:
+#     if type(character[key]) is dict:
+#         for small_key in character[key]:
+#             print(small_key + ":", character[key])
+#     elif type(character) is list:
+#         for element in character[key]:
+#             print(key, ":" , element)
+#     else:
+#         print(key, ":", character[key])
+
+
+
+# students = [{'회원번호': 'S21-001',
+#              '이름': '이상혁',
+#              '전공': 'LoL',
+#              '연락처': '010-1234-5678',
+#              '메일': 'faker@gmail.com',
+#              '취미': '게임, 음악'},
+#             {'회원번호': 'S21-002',
+#              '이름': '최예나',
+#              '전공': '실용음악',
+#              '연락처': '010-5678-9012',
+#              '메일': 'yenajigumina@gmail.com',
+#              '취미': '게임, 수다'},
+#             {'회원번호': 'S21-003',
+#              '이름': '한강',
+#              '전공': '국어국문',
+#              '연락처': '010-9012-3456',
+#              '메일': 'river@gmail.com',
+#              '취미': '글쓰기, 수영'}]
+#
+#
+# """
+# 회원번호 : S21-001
+# 이름 : 이상혁
+# 전공 : LOL
+# 연락처 : 010-1234-5678
+# 메일 : faker@gmail.com
+# 취미 : 게임, 음악
+# """
+#
+# print('-'* 20)
+# for dict in students:
+#     for s in dict:
+#      print(s, ":", dict[s])
+# print('-'* 20)
+
+
+
+# a = range(6)
+# print(a)
+# print(list(a))
+#
+# b1 = range(0, 5)
+# b2 = range(5, 10)
+# print(b1)
+# print(list(b1))
+# print(b2)
+# print(list(b2))
+
+# c1 = range(0, 10, 2)
+# c2 = range(0, 10, 3)
+# print(c1)
+# print(list(c1))
+# print(c2)
+# print(list(c2))
+
+
+
+#
+# for i in range(5):
+#     print(str(i) + "= 반복변수")
+
+#
+# for i in range(0, 10, 3):
+#     print(str(i) + "= 반복변수")
+
+
+#
+# nums = [673, 703, 5, 601, 70]
+# for num in range(len(nums)):
+#     print(f"{num}번째 반복: {nums[num]}")
+
+# i = 0
+# while i < 10:
+#     print(f"{i}번째 반복입니다.")
+#     i += 1
+
+
+
+# list_01 = [0, 1, 0, 1, 0, 1, 0, 1]
+# value = 1
+#
+# while value in list_01:  "list_01 안에 value가 있을 동안"
+#     list_01.remove(value)
+#
+#     print(list_01)
+
+
+
+# import time
+#
+# num = 0
+#
+# target_tick = time.time() + 5
+# while time.time() < target_tick:
+#     num += 1
+#
+# print(f"5초 동안 {num}번 반복했습니다.")
+# print(time.time())
+
+
+# i = 0
+# while True:
+#     print(f"{i}번째 묻습니다.")
+#     i += 1
+#     input_text = input("당신은 게이 입니까? (y / n)")
+#     if input_text in ["y", "Y"]:
+#         print("화이팅")
+#         break
+
+
+
+nums = [5, 8, 11, 55, 70 ,80]
+
+for num in nums:
+    if num < 10:
+        continue
+    print(num)
