@@ -1,0 +1,61 @@
+# limit = 1000
+# idx = 1
+# sum_value = 0
+# while sum_value < limit:
+#     sum_value += idx
+#     idx += 1
+#
+# print(f"{idx - 1}를 더할때 {limit}을 넘으면 그 대의 값은 {sum_value}입니다.")
+
+
+
+
+# from random import randint
+# pc_choice = randint(1,50)
+# print("Welcome to my game")
+# user = int(input("write your number between 1 and 50: "))
+# while True:
+#     if pc_choice == user:
+#         print("킹애 정답")
+#         break
+#     elif pc_choice > user:
+#         print("수듄")
+#         break
+#     elif pc_choice < user:
+#         print("저스트 키딩")
+#         break
+ # if pc_choice == user:
+#     print("congretulations! you are correct!")
+# elif user < pc_choice:
+#     print("Oooo you are very close...")
+# elif user > pc_choice:
+#     print("too big number,try again!")
+
+Kor = 85
+Eng = 82
+math = 89
+science = 75
+history = 94
+wk = int(input("서당개? "))
+wE = int(input("원어민? "))
+wM = int(input("허수? "))
+wS = int(input("재구? "))
+wH = int(input("킴정은? "))
+
+vudrbs = Kor + Eng + math + science + history
+slavud = wk + wH + wM + wS + wE
+vudrbsqhek = slavud - vudrbs
+final_score = slavud
+print("총점:",final_score,"(평균보다)",vudrbsqhek)
+
+chdwja = slavud // 5
+chdwjavudrbs = vudrbs // 5
+print("평균:", chdwja,"(학년 총평균 보다)",chdwja - chdwjavudrbs)
+
+korean = wk - Kor
+english = wE - Eng
+mathvud = wM - math
+sciencevud = wS - science
+historyvud = wH - history
+
+print("표준편차:", korean, english, mathvud, sciencevud, historyvud)
