@@ -1,0 +1,72 @@
+import sys
+import pygame
+
+# 초기화
+pygame.init()
+pygame.display.set_caption("FC Offline in Summer")
+screen = pygame.display.set_mode((800, 600))
+
+# 테스트 서피스
+test_surface = pygame.Surface((50, 50))
+test_surface.fill("red")
+
+# 게임 폰트
+title_font = pygame.font.SysFont("comicsans", 30)
+test_font = pygame.font.SysFont("comicsans", 20)
+
+# 공 이미지 로드
+ball = pygame.image.load("ball.png").convert_alpha()
+
+# 2. 원하는 크기(가로, 세로)로 줄이기 (예: 50x50 크기로 변경)
+ball = pygame.transform.scale(ball, (50, 50))
+
+# 3. 크기가 줄어든 이미지로 rect 재생성
+ball_rect = ball.get_rect()
+
+
+grass = pygame.image.load("grass2.jpg").convert_alpha()
+grass = pygame.transform.scale(grass, (800, 600))
+grass_rect = grass.get_rect()
+
+
+y = 0
+clock = pygame.time.Clock()
+running = True
+
+while running:
+    # 1. 이벤트 처리
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+
+    # 2. 키 입력 처리
+    keys = pygame.key.get_pressed()
+    if keys[pygame.K_LEFT]:
+        ball_rect.move_ip(-8, 0)
+    if keys[pygame.K_RIGHT]:
+        ball_rect.move_ip(8, 0)
+    if keys[pygame.K_UP]:
+        ball_rect.move_ip(0, -8)
+    if keys[pygame.K_DOWN]:
+        ball_rect.move_ip(0, 8)  # 수정 완료
+
+    # 3. 게임 로직 (y값 이동)
+    if y < 800:
+        y += 2
+    else:
+        y = 0
+
+    # 4. 화면 그리기
+    screen.fill((0, 0, 0))
+
+    # 공과 텍스트, 서피스 출력
+    screen.blit(ball, ball_rect)  # 주석 해제 및 수정
+    screen.blit(test_surface, (y, 50))
+    screen.blit(test_font.render("Hello World!", True, (200, 0, 0)), (y, 20))
+
+    # 5. 화면 업데이트
+    pygame.display.flip()
+    clock.tick(60)
+
+pygame.quit()
+sys.exit()
