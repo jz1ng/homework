@@ -1,0 +1,207 @@
+import pygame
+import random
+import math
+
+pygame.init()
+
+WIDTH, HEIGHT = 800, 600
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("핵앤슬래시 프로토타입")
+clock = pygame.time.Clock()
+FPS = 60
+
+WHITE = (255, 255, 255)
+BLACK = (20, 20, 20)
+RED = (220, 60, 60)
+BLUE = (80, 140, 255)
+YELLOW = (255, 220, 80)
+GRAY = (100, 100, 100)
+
+font = pygame.font.SysFont("malgungothic", 24)  # 한글 표시용
+
+
+class Player:
+    def __init__(self):
+        self.x = WIDTH // 2
+        self.y = HEIGHT // 2
+        self.radius = 20
+        self.speed = 5
+        self.hp = 100
+        self.max_hp = 100
+        self.attack_range = 60
+        self.attack_cooldown = 0
+        self.attack_cooldown_max = 20  # 프레임 단위
+        self.attacking_timer = 0
+        self.facing = (1, 0)  # 공격 방향 (마지막 이동방향 기준)
+
+    def move(self, keys):
+        dx, dy = 0, 0
+        if keys[pygame.K_w] or keys[pygame.K_UP]:
+            dy -= 1
+        if keys[pygame.K_s] or keys[pygame.K_DOWN]:
+            dy += 1
+        if keys[pygame.K_a] or keys[pygame.K_LEFT]:
+            dx -= 1
+        if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
+            dx += 1
+
+        if dx != 0 or dy != 0:
+            length = math.hypot(dx, dy)
+            dx, dy = dx / length, dy / length
+            self.facing = (dx, dy)
+            self.x += dx * self.speed
+            self.y += dy * self.speed
+
+        self.x = max(self.radius, min(WIDTH - self.radius, self.x))
+        self.y = max(self.radius, min(HEIGHT - self.radius, self.y))
+
+    def update(self):
+        if self.attack_cooldown > 0:
+            self.attack_cooldown -= 1
+        if self.attacking_timer > 0:
+            self.attacking_timer -= 1
+
+    def try_attack(self, monsters):
+        killed = 0
+        if self.attack_cooldown == 0:
+            self.attack_cooldown = self.attack_cooldown_max
+            self.attacking_timer = 8  # 이펙트 표시 프레임
+
+            ax = self.x + self.facing[0] * self.attack_range
+            ay = self.y + self.facing[1] * self.attack_range
+
+            for m in monsters[:]:
+                dist = math.hypot(m.x - ax, m.y - ay)
+                if dist < self.attack_range:
+                    m.hp -= 25
+                    if m.hp <= 0:
+                        monsters.remove(m)
+                        killed += 1
+        return killed
+
+    def draw(self, surface):
+        pygame.draw.circle(surface, BLUE, (int(self.x), int(self.y)), self.radius)
+
+        # 공격 이펙트
+        if self.attacking_timer > 0:
+            ax = self.x + self.facing[0] * self.attack_range
+            ay = self.y + self.facing[1] * self.attack_range
+            pygame.draw.circle(surface, YELLOW, (int(ax), int(ay)), 30, 3)
+
+        # HP 바
+        bar_w = 200
+        pygame.draw.rect(surface, GRAY, (10, 10, bar_w, 20))
+        pygame.draw.rect(surface, RED, (10, 10, bar_w * (self.hp / self.max_hp), 20))
+        hp_text = font.render(f"HP: {self.hp}/{self.max_hp}", True, WHITE)
+        surface.blit(hp_text, (15, 12))
+
+
+class Monster:
+    def __init__(self):
+        side = random.choice(["top", "bottom", "left", "right"])
+        if side == "top":
+            self.x, self.y = random.randint(0, WIDTH), -20
+        elif side == "bottom":
+            self.x, self.y = random.randint(0, WIDTH), HEIGHT + 20
+        elif side == "left":
+            self.x, self.y = -20, random.randint(0, HEIGHT)
+        else:
+            self.x, self.y = WIDTH + 20, random.randint(0, HEIGHT)
+
+        self.radius = 16
+        self.speed = 1.8
+        self.hp = 50
+        self.max_hp = 50
+        self.damage = 5
+        self.hit_cooldown = 0
+
+    def update(self, player):
+        dx, dy = player.x - self.x, player.y - self.y
+        dist = math.hypot(dx, dy)
+        if dist > 1:
+            dx, dy = dx / dist, dy / dist
+            self.x += dx * self.speed
+            self.y += dy * self.speed
+
+        if self.hit_cooldown > 0:
+            self.hit_cooldown -= 1
+
+        # 플레이어와 충돌 시 데미지
+        if dist < self.radius + player.radius and self.hit_cooldown == 0:
+            player.hp -= self.damage
+            self.hit_cooldown = 30
+
+    def draw(self, surface):
+        pygame.draw.circle(surface, RED, (int(self.x), int(self.y)), self.radius)
+        bar_w = 30
+        pygame.draw.rect(surface, GRAY, (self.x - bar_w / 2, self.y - self.radius - 10, bar_w, 5))
+        pygame.draw.rect(surface, (0, 200, 0), (self.x - bar_w / 2, self.y - self.radius - 10, bar_w * (self.hp / self.max_hp), 5))
+
+
+def main():
+    player = Player()
+    monsters = []
+    spawn_timer = 0
+    spawn_interval = 90  # 프레임마다 몬스터 스폰
+    score = 0
+    game_over = False
+
+    running = True
+    while running:
+        clock.tick(FPS)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE and not game_over:
+                    score += player.try_attack(monsters)
+                if event.key == pygame.K_r and game_over:
+                    player = Player()
+                    monsters = []
+                    spawn_timer = 0
+                    score = 0
+                    game_over = False
+
+        if not game_over:
+            keys = pygame.key.get_pressed()
+            player.move(keys)
+            player.update()
+
+            spawn_timer += 1
+            if spawn_timer >= spawn_interval:
+                spawn_timer = 0
+                monsters.append(Monster())
+                if spawn_interval > 30:
+                    spawn_interval -= 1  # 점점 빨리 스폰 (난이도 상승)
+
+            before = len(monsters)
+            for m in monsters:
+                m.update(player)
+            after = len(monsters)
+
+            if player.hp <= 0:
+                game_over = True
+
+        # 그리기
+        screen.fill(BLACK)
+        for m in monsters:
+            m.draw(screen)
+        player.draw(screen)
+
+        score_text = font.render(f"점수(처치): {score}", True, WHITE)
+        screen.blit(score_text, (WIDTH - 180, 10))
+
+        info_text = font.render("WASD 이동 / SPACE 공격", True, WHITE)
+        screen.blit(info_text, (10, HEIGHT - 30))
+
+        if game_over:
+            over_text = font.render("게임 오버! R키를 눌러 재시작", True, YELLOW)
+            screen.blit(over_text, (WIDTH // 2 - 140, HEIGHT // 2))
+
+        pygame.display.flip()
+
+    pygame.quit()
+
+
+if __name__ == "__main__":
+    main()
