@@ -1,0 +1,446 @@
+import pygame
+import random
+import math
+
+# 파이게임 초기화
+pygame.init()
+
+# 화면 크기 설정 (너비 1000, 높이 800)
+WIDTH, HEIGHT = 1000, 800
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("핵앤슬래시 프로토타입")
+clock = pygame.time.Clock()
+FPS = 60  # 초당 프레임 수
+
+# 색상 정의 (RGB)
+WHITE = (255, 255, 255)
+BLACK = (20, 20, 20)
+RED = (220, 60, 60)
+BLUE = (80, 140, 255)
+YELLOW = (255, 220, 80)
+GRAY = (100, 100, 100)
+ORANGE = (255, 150, 50)
+GREEN = (80, 220, 120)
+PURPLE = (180, 100, 220)
+
+# 폰트 설정 (시스템 맑은 고딕 사용)
+font = pygame.font.SysFont("malgungothic", 24)
+big_font = pygame.font.SysFont("malgungothic", 40)
+small_font = pygame.font.SysFont("malgungothic", 18)
+
+# ---------------- 무기 정의 ----------------
+# 필요하면 여기 수치만 바꿔서 밸런스 조절하면 돼
+WEAPONS = {
+    "pistol": {
+        "name": "권총",
+        "color": YELLOW,
+        "cooldown": 18,  # 쿨타임 (낮을수록 연사 속도 빠름)
+        "damage": 20,
+        "bullet_speed": 12,
+        "bullet_radius": 5,
+        "explosive": False,
+        "explosion_radius": 0,
+        "desc": "단발, 적당한 데미지, 무난한 연사속도",
+    },
+    "smg": {
+        "name": "연사총",
+        "color": GREEN,
+        "cooldown": 5,
+        "damage": 8,
+        "bullet_speed": 14,
+        "bullet_radius": 4,
+        "explosive": False,
+        "explosion_radius": 0,
+        "desc": "매우 빠른 연사, 낮은 데미지",
+    },
+    "bazooka": {
+        "name": "바주카포",
+        "color": ORANGE,
+        "cooldown": 45,
+        "damage": 45,
+        "bullet_speed": 8,
+        "bullet_radius": 8,
+        "explosive": True,
+        "explosion_radius": 80,
+        "desc": "느리지만 폭발 범위 데미지",
+    },
+    "french fries gun": {
+        "name" : "감자튀김 총",
+        "color" : YELLOW,
+        "cooldown": 30,
+        "damage": 67,
+        "bullet_speed": 10,
+        "bullet_radius": 5,
+        
+    }
+}
+
+# 무기 선택창이 등장할 점수 목록 (원하는 만큼 점수를 추가/변경할 수 있습니다)
+WEAPON_MILESTONES = [20, 100]
+
+
+class Bullet:
+    """플레이어가 발사하는 총알 클래스"""
+
+    def __init__(self, x, y, dx, dy, weapon):
+        self.x = x
+        self.y = y
+        self.dx = dx
+        self.dy = dy
+        self.weapon = weapon
+        self.radius = weapon["bullet_radius"]
+        self.speed = weapon["bullet_speed"]
+        self.damage = weapon["damage"]
+
+    def update(self):
+        # 총알 이동 방향으로 속도만큼 위치 갱신
+        self.x += self.dx * self.speed
+        self.y += self.dy * self.speed
+
+    def offscreen(self):
+        # 화면 바깥으로 나가면 True 반환
+        return self.x < -20 or self.x > WIDTH + 20 or self.y < -20 or self.y > HEIGHT + 20
+
+    def draw(self, surface):
+        # 총알 원 그리기
+        pygame.draw.circle(surface, self.weapon["color"], (int(self.x), int(self.y)), self.radius)
+
+
+class Player:
+    """플레이어(캐릭터) 클래스"""
+
+    def __init__(self):
+        self.x = WIDTH // 2
+        self.y = HEIGHT // 2
+        self.radius = 20
+        self.speed = 5
+        self.hp = 100
+        self.max_hp = 100
+        self.weapon_key = "pistol"
+        self.cooldown = 0
+
+    def move(self, keys):
+        # 키 입력에 따른 이동 방향 계산
+        dx, dy = 0, 0
+        if keys[pygame.K_w] or keys[pygame.K_UP]:
+            dy -= 1
+        if keys[pygame.K_s] or keys[pygame.K_DOWN]:
+            dy += 1
+        if keys[pygame.K_a] or keys[pygame.K_LEFT]:
+            dx -= 1
+        if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
+            dx += 1
+
+        # 대각선 이동 시 속도가 빨라지는 현상을 막기 위해 정규화 후 이동
+        if dx != 0 or dy != 0:
+            length = math.hypot(dx, dy)
+            dx, dy = dx / length, dy / length
+            self.x += dx * self.speed
+            self.y += dy * self.speed
+
+        # 화면 밖으로 나가지 않도록 제한
+        self.x = max(self.radius, min(WIDTH - self.radius, self.x))
+        self.y = max(self.radius, min(HEIGHT - self.radius, self.y))
+
+    def update(self):
+        # 무기 발사 쿨타임 감소
+        if self.cooldown > 0:
+            self.cooldown -= 1
+
+    def try_shoot(self, target_x, target_y, bullets):
+        # 쿨타임이 0일 때 마우스 방향으로 총알 생성
+        if self.cooldown == 0:
+            weapon = WEAPONS[self.weapon_key]
+            self.cooldown = weapon["cooldown"]
+            dx, dy = target_x - self.x, target_y - self.y
+            dist = math.hypot(dx, dy)
+            if dist == 0:
+                dx, dy = 1, 0
+            else:
+                dx, dy = dx / dist, dy / dist
+            bullets.append(Bullet(self.x, self.y, dx, dy, weapon))
+
+    def draw(self, surface, mouse_pos):
+        # 플레이어 본체(파란색 원) 그리기
+        pygame.draw.circle(surface, BLUE, (int(self.x), int(self.y)), self.radius)
+
+        # 마우스 방향으로 조준선(선) 그리기
+        dx, dy = mouse_pos[0] - self.x, mouse_pos[1] - self.y
+        dist = math.hypot(dx, dy)
+        if dist > 0:
+            dx, dy = dx / dist, dy / dist
+            end_x, end_y = self.x + dx * 30, self.y + dy * 30
+            pygame.draw.line(surface, WHITE, (self.x, self.y), (end_x, end_y), 2)
+
+        # 체력바(HP Bar) 및 텍스트 표시
+        bar_w = 200
+        pygame.draw.rect(surface, GRAY, (10, 10, bar_w, 20))
+        pygame.draw.rect(surface, RED, (10, 10, bar_w * (self.hp / self.max_hp), 20))
+        hp_text = font.render(f"HP: {self.hp}/{self.max_hp}", True, WHITE)
+        surface.blit(hp_text, (15, 12))
+
+        # 현재 장착 중인 무기 이름 표시
+        weapon = WEAPONS[self.weapon_key]
+        w_text = font.render(f"무기: {weapon['name']}", True, weapon["color"])
+        surface.blit(w_text, (10, 40))
+
+
+class Monster:
+    """적(몬스터) 클래스"""
+
+    def __init__(self, hp_bonus=0):
+        # 화면 바깥 사방 중 랜덤한 위치에서 스폰
+        side = random.choice(["top", "bottom", "left", "right"])
+        if side == "top":
+            self.x, self.y = random.randint(0, WIDTH), -20
+        elif side == "bottom":
+            self.x, self.y = random.randint(0, WIDTH), HEIGHT + 20
+        elif side == "left":
+            self.x, self.y = -20, random.randint(0, HEIGHT)
+        else:
+            self.x, self.y = WIDTH + 20, random.randint(0, HEIGHT)
+
+        self.radius = 16
+        self.speed = 1.8
+        self.max_hp = 50 + hp_bonus
+        self.hp = self.max_hp
+        self.damage = 5
+        self.hit_cooldown = 0
+
+    def update(self, player):
+        # 플레이어를 향해 이동
+        dx, dy = player.x - self.x, player.y - self.y
+        dist = math.hypot(dx, dy)
+        if dist > 1:
+            dx, dy = dx / dist, dy / dist
+            self.x += dx * self.speed
+            self.y += dy * self.speed
+
+        if self.hit_cooldown > 0:
+            self.hit_cooldown -= 1
+
+        # 플레이어와 충돌 시 데미지 부여
+        if dist < self.radius + player.radius and self.hit_cooldown == 0:
+            player.hp -= self.damage
+            self.hit_cooldown = 30
+
+    def draw(self, surface):
+        # 몬스터 본체(빨간색 원) 그리기
+        pygame.draw.circle(surface, RED, (int(self.x), int(self.y)), self.radius)
+        # 몬스터 머리 위에 체력바 표시
+        bar_w = 30
+        pygame.draw.rect(surface, GRAY, (self.x - bar_w / 2, self.y - self.radius - 10, bar_w, 5))
+        pygame.draw.rect(surface, (0, 200, 0),
+                         (self.x - bar_w / 2, self.y - self.radius - 10, bar_w * (self.hp / self.max_hp), 5))
+
+
+def draw_weapon_select(surface, options):
+    """점수 달성 시 나타나는 무기 선택 화면 그리기"""
+    overlay = pygame.Surface((WIDTH, HEIGHT))
+    overlay.set_alpha(200)
+    overlay.fill(BLACK)
+    surface.blit(overlay, (0, 0))
+
+    title = big_font.render("무기를 선택하세요!", True, WHITE)
+    surface.blit(title, (WIDTH // 2 - title.get_width() // 2, 100))
+
+    card_w, card_h = 180, 220
+    gap = 30
+    total_w = card_w * len(options) + gap * (len(options) - 1)
+    start_x = WIDTH // 2 - total_w // 2
+    y = 220
+
+    # 무기 카드들을 나열
+    for i, key in enumerate(options):
+        weapon = WEAPONS[key]
+        x = start_x + i * (card_w + gap)
+        pygame.draw.rect(surface, (40, 40, 40), (x, y, card_w, card_h), border_radius=10)
+        pygame.draw.rect(surface, weapon["color"], (x, y, card_w, card_h), 3, border_radius=10)
+
+        num_text = big_font.render(str(i + 1), True, weapon["color"])
+        surface.blit(num_text, (x + card_w // 2 - num_text.get_width() // 2, y + 15))
+
+        name_text = font.render(weapon["name"], True, WHITE)
+        surface.blit(name_text, (x + card_w // 2 - name_text.get_width() // 2, y + 65))
+
+        desc_lines = [weapon["desc"][j:j + 10] for j in range(0, len(weapon["desc"]), 10)]
+        for k, line in enumerate(desc_lines):
+            line_text = small_font.render(line, True, GRAY)
+            surface.blit(line_text, (x + card_w // 2 - line_text.get_width() // 2, y + 100 + k * 22))
+
+        dmg_text = small_font.render(f"데미지 {weapon['damage']}", True, WHITE)
+        surface.blit(dmg_text, (x + card_w // 2 - dmg_text.get_width() // 2, y + card_h - 30))
+
+    hint = font.render("숫자 키(1~3)를 눌러 선택", True, YELLOW)
+    surface.blit(hint, (WIDTH // 2 - hint.get_width() // 2, y + card_h + 30))
+
+
+def explode(x, y, radius, monsters, damage):
+    """폭발 효과 처리 함수 (바주카포 등)"""
+    killed = 0
+    for m in monsters[:]:
+        dist = math.hypot(m.x - x, m.y - y)
+        if dist < radius:
+            m.hp -= damage
+            if m.hp <= 0:
+                monsters.remove(m)
+                killed += 1
+    return killed
+
+
+def main():
+    player = Player()
+    monsters = []
+    bullets = []
+    explosions = []
+    spawn_timer = 0
+    spawn_interval = 90
+    score = 0
+    game_over = False
+
+    weapon_select_active = False
+
+    # 무기 선택 마일스톤 관리 변수
+    milestone_index = 0  # WEAPON_MILESTONES 리스트의 몇 번째 인덱스를 목표로 할지 관리
+    weapon_options = []
+
+    running = True
+    while running:
+        clock.tick(FPS)
+        mouse_pos = pygame.mouse.get_pos()
+
+        # 이벤트 처리 (키보드, 마우스 입력)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+
+            if event.type == pygame.KEYDOWN:
+                # 게임 오버 상태에서 R키를 누르면 재시작
+                if event.key == pygame.K_r and game_over:
+                    player = Player()
+                    monsters = []
+                    bullets = []
+                    explosions = []
+                    spawn_timer = 0
+                    spawn_interval = 90
+                    score = 0
+                    game_over = False
+                    weapon_select_active = False
+                    milestone_index = 0
+
+                # 무기 선택창이 활성화된 상태에서 1~3번 키를 누르면 무기 변경
+                if weapon_select_active:
+                    if event.key in (pygame.K_1, pygame.K_2, pygame.K_3):
+                        idx = event.key - pygame.K_1
+                        if idx < len(weapon_options):
+                            player.weapon_key = weapon_options[idx]
+                            weapon_select_active = False
+
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if not game_over and not weapon_select_active:
+                    player.try_shoot(mouse_pos[0], mouse_pos[1], bullets)
+
+        # 게임 진행 중 로직 (게임 오버나 무기 선택창이 아닐 때)
+        if not game_over and not weapon_select_active:
+            keys = pygame.key.get_pressed()
+            player.move(keys)
+            player.update()
+
+            # 마우스 좌클릭 유지 시 연속 발사
+            if pygame.mouse.get_pressed()[0]:
+                player.try_shoot(mouse_pos[0], mouse_pos[1], bullets)
+
+            # 몬스터 스폰 타이머
+            spawn_timer += 1
+            if spawn_timer >= spawn_interval:
+                spawn_timer = 0
+                monsters.append(Monster(hp_bonus=score))
+                if spawn_interval > 30:
+                    spawn_interval -= 1
+
+            # 몬스터 위치 업데이트
+            for m in monsters:
+                m.update(player)
+
+            # 총알 업데이트 및 충돌 체크
+            for b in bullets[:]:
+                b.update()
+                if b.offscreen():
+                    bullets.remove(b)
+                    continue
+                for m in monsters[:]:
+                    dist = math.hypot(m.x - b.x, m.y - b.y)
+                    if dist < m.radius + b.radius:
+                        if b.weapon["explosive"]:
+                            explosions.append([b.x, b.y, 15])
+                            score += explode(b.x, b.y, b.weapon["explosion_radius"], monsters, b.damage)
+                        else:
+                            m.hp -= b.damage
+                            if m.hp <= 0:
+                                monsters.remove(m)
+                                score += 1
+                        if b in bullets:
+                            bullets.remove(b)
+                        break
+
+            # 폭발 애니메이션 효과 업데이트
+            for e in explosions[:]:
+                e[2] -= 1
+                if e[2] <= 0:
+                    explosions.remove(e)
+
+            # 플레이어 사망 체크
+            if player.hp <= 0:
+                game_over = True
+
+            # 설정된 스코어 마일스톤에 도달했는지 확인
+            if milestone_index < len(WEAPON_MILESTONES):
+                if score >= WEAPON_MILESTONES[milestone_index]:
+                    weapon_select_active = True
+                    weapon_options = random.sample(list(WEAPONS.keys()), k=min(3, len(WEAPONS)))
+                    milestone_index += 1  # 다음 마일스톤을 가리키도록 인덱스 증가
+
+        # 화면 그리기 (렌더링)
+        screen.fill(BLACK)
+        for m in monsters:
+            m.draw(screen)
+        for b in bullets:
+            b.draw(screen)
+        for e in explosions:
+            pygame.draw.circle(screen, ORANGE, (int(e[0]), int(e[1])), 80 - e[2] * 3, 3)
+
+        player.draw(screen, mouse_pos)
+
+        # UI 텍스트 출력 (점수, 다음 무기 선택 점수 안내)
+        score_text = font.render(f"점수(처치): {score}", True, WHITE)
+        screen.blit(score_text, (WIDTH - 180, 10))
+
+        # 다음 무기 선택 점수가 남아있을 때만 UI에 표시
+        if milestone_index < len(WEAPON_MILESTONES):
+            next_text = small_font.render(f"다음 무기선택: {WEAPON_MILESTONES[milestone_index]}점", True, GRAY)
+            screen.blit(next_text, (WIDTH - 200, 40))
+        else:
+            max_text = small_font.render("모든 무기선택 완료", True, GRAY)
+            screen.blit(max_text, (WIDTH - 200, 40))
+
+        info_text = font.render("WASD 이동 / 마우스 클릭(or 드래그) 발사", True, WHITE)
+        screen.blit(info_text, (10, HEIGHT - 30))
+
+        # 무기 선택창 활성화 시 선택 화면 표시
+        if weapon_select_active:
+            draw_weapon_select(screen, weapon_options)
+
+        # 게임 오버 시 안내 문구 표시
+        if game_over:
+            over_text = big_font.render("게임 오버!", True, YELLOW)
+            screen.blit(over_text, (WIDTH // 2 - over_text.get_width() // 2, HEIGHT // 2 - 30))
+            restart_text = font.render("R키를 눌러 재시작", True, WHITE)
+            screen.blit(restart_text, (WIDTH // 2 - restart_text.get_width() // 2, HEIGHT // 2 + 20))
+
+        pygame.display.flip()
+
+    pygame.quit()
+
+
+if __name__ == "__main__":
+    main()
