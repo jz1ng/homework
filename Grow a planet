@@ -1,0 +1,265 @@
+import pygame
+import sys
+import random
+
+# 1. Pygame 및 기본 설정
+pygame.init()
+WIDTH, HEIGHT = 800, 600
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("빛 센서 식물 키우기 게임")
+
+# 색상 정의
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+GREEN = (46, 204, 113)
+YELLOW = (241, 196, 15)
+RED = (231, 76, 60)
+SKY_BLUE = (174, 214, 241)
+GRAY = (210, 210, 210)
+BROWN = (139, 69, 19)
+
+# -----------------------------------------------------------------------
+# [폰트 설정 - 수정된 부분]
+# "malgungothic"은 윈도우에만 있는 폰트라서, 다른 OS(맥/리눅스)에서는
+# 못 찾아서 한글이 깨지거나(네모 박스) 프로그램이 이상하게 보일 수 있음.
+# 여러 후보 폰트를 순서대로 시도해서 시스템에 맞는 걸 자동으로 찾도록 수정.
+# -----------------------------------------------------------------------
+def get_korean_font(size):
+    candidates = [
+        "malgungothic",      # Windows
+        "applegothic",       # macOS
+        "notosanscjkkr",     # Linux (Noto Sans CJK KR)
+        "notosanskr",
+        "nanumgothic",
+    ]
+    available = pygame.font.get_fonts()
+    for name in candidates:
+        if name.replace(" ", "").lower() in available:
+            return pygame.font.SysFont(name, size)
+    # 다 없으면 시스템 기본 폰트로라도 실행되게 함
+    print("⚠ 한글 폰트를 찾지 못했습니다. 기본 폰트로 대체합니다.")
+    return pygame.font.SysFont(None, size)
+
+font_large = get_korean_font(30)
+font_small = get_korean_font(18)
+
+# 게임 주요 변수
+growth = 0.0         # 성장도 (0 ~ 100)
+stress = 0.0         # 스트레스/시듦 (0 ~ 100)
+light_level = 500    # 원시 빛 센서 값 (0 ~ 1000) - 계속 들어오는 빛, 외부 환경값
+shadow_level = 0     # 그림자(차광막) 위치 (0: 그림자 없음 ~ 1000: 완전히 가림) - 액추에이터
+
+# 임계값(Threshold) 설정 - 기계공학 센서 제어의 핵심 포인트!
+TOO_BRIGHT = 750     # 과열 임계값 (실효 광량이 이보다 크면 그림자를 올려야 함)
+TOO_DARK = 250       # 어둠 임계값 (실효 광량이 이보다 작으면 그림자를 내려야 함)
+
+SHADOW_SPEED = 300   # 그림자가 초당 얼마나 빠르게 움직이는지 (플레이어 조작 속도)
+LIGHT_CHANGE_INTERVAL = 2.0  # 몇 초마다 빛이 랜덤하게 바뀔지
+light_timer = 0.0
+light_target = light_level  # 빛이 목표값을 향해 부드럽게 움직이도록
+
+clock = pygame.time.Clock()
+
+# 게임 상태: "MENU"(메인 메뉴) / "PLAYING"(게임 중) / "END"(게임오버/클리어)
+game_state = "MENU"
+
+# 시작 버튼 영역 (x, y, width, height)
+start_button = pygame.Rect(WIDTH // 2 - 100, 380, 200, 60)
+
+def reset_game():
+    """게임 변수들을 초기값으로 되돌림 (시작할 때 / 재시작할 때 호출)"""
+    global growth, stress, light_level, shadow_level, light_timer, light_target
+    global status_msg, status_color
+    growth = 0.0
+    stress = 0.0
+    light_level = 500
+    shadow_level = 0
+    light_timer = 0.0
+    light_target = light_level
+    status_msg = "게임을 시작합니다..."
+    status_color = BLACK
+
+reset_game()
+
+def draw_bar(surface, x, y, width, height, value, max_value, color, label):
+    """게이지 바를 그리는 함수"""
+    pygame.draw.rect(surface, GRAY, (x, y, width, height))
+    fill_width = int((value / max_value) * width)
+    fill_width = max(0, min(width, fill_width))
+    pygame.draw.rect(surface, color, (x, y, fill_width, height))
+    pygame.draw.rect(surface, BLACK, (x, y, width, height), 2)
+
+    text = font_small.render(f"{label}: {int(value)}", True, BLACK)
+    surface.blit(text, (x, y - 22))
+
+def draw_menu():
+    """메인 메뉴 화면 그리기"""
+    screen.fill(SKY_BLUE)
+
+    title_surface = font_large.render("Grow a plant!", True, BLACK)
+    screen.blit(title_surface, (WIDTH // 2 - title_surface.get_width() // 2, 200))
+
+    subtitle_surface = font_small.render("그림자를 조절해서 식물을 잘 키워보세요!", True, BLACK)
+    screen.blit(subtitle_surface, (WIDTH // 2 - subtitle_surface.get_width() // 2, 250))
+
+    # 마우스가 버튼 위에 있으면 색을 진하게 (hover 효과)
+    mouse_pos = pygame.mouse.get_pos()
+    if start_button.collidepoint(mouse_pos):
+        button_color = (39, 174, 96)
+    else:
+        button_color = GREEN
+    pygame.draw.rect(screen, button_color, start_button, border_radius=10)
+    pygame.draw.rect(screen, BLACK, start_button, 2, border_radius=10)
+
+    btn_text = font_large.render("게임 시작", True, WHITE)
+    screen.blit(btn_text, (start_button.centerx - btn_text.get_width() // 2,
+                            start_button.centery - btn_text.get_height() // 2))
+
+# 메인 게임 루프
+running = True
+while running:
+    dt = clock.tick(30) / 1000.0  # 프레임 독립적인 시간 계산 (초 단위)
+
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if game_state == "MENU" and start_button.collidepoint(event.pos):
+                reset_game()
+                game_state = "PLAYING"
+            elif game_state == "END" and start_button.collidepoint(event.pos):
+                reset_game()
+                game_state = "PLAYING"
+
+    # =====================================================================
+    # [메인 메뉴 화면]
+    # =====================================================================
+    if game_state == "MENU":
+        draw_menu()
+        pygame.display.flip()
+        continue
+
+    # =====================================================================
+    # [게임 오버 / 클리어 화면] - 버튼 눌러서 다시 시작
+    # =====================================================================
+    if game_state == "END":
+        screen.fill(SKY_BLUE)
+        msg_surface = font_large.render(status_msg, True, status_color)
+        screen.blit(msg_surface, (WIDTH // 2 - msg_surface.get_width() // 2, 200))
+
+        mouse_pos = pygame.mouse.get_pos()
+        button_color = (39, 174, 96) if start_button.collidepoint(mouse_pos) else GREEN
+        pygame.draw.rect(screen, button_color, start_button, border_radius=10)
+        pygame.draw.rect(screen, BLACK, start_button, 2, border_radius=10)
+        btn_text = font_large.render("다시하기", True, WHITE)
+        screen.blit(btn_text, (start_button.centerx - btn_text.get_width() // 2,
+                                start_button.centery - btn_text.get_height() // 2))
+
+        pygame.display.flip()
+        continue
+
+    # -------------------------------------------------------------------
+    # [센서 입력부]
+    # 실제 센서 연결 시: pyserial 등을 통해 보드에서 전달받은 값으로 light_level을 업데이트합니다.
+    # 키보드 테스트: 방향키 위(▲) = 빛 강해짐 / 방향키 아래(▼) = 손으로 가림
+    # -------------------------------------------------------------------
+    keys = pygame.key.get_pressed()
+    if keys[pygame.K_UP]:
+        shadow_level = min(1000, shadow_level + SHADOW_SPEED * dt)
+    if keys[pygame.K_DOWN]:
+        shadow_level = max(0, shadow_level - SHADOW_SPEED * dt)
+
+    # -------------------------------------------------------------------
+    # [빛 랜덤 변화 로직]
+    # 일정 시간(LIGHT_CHANGE_INTERVAL)마다 새로운 목표 빛 세기를 랜덤으로 정하고,
+    # 그 목표값을 향해 부드럽게(서서히) 움직이게 함 -> 실제 센서값처럼 자연스럽게 변화
+    # 플레이어는 이 빛의 변화를 보고 직접 그림자를 조절해야 함
+    # -------------------------------------------------------------------
+    light_timer += dt
+    if light_timer >= LIGHT_CHANGE_INTERVAL:
+        light_timer = 0.0
+        light_target = random.randint(0, 1000)
+
+    if light_level < light_target:
+        light_level = min(light_target, light_level + 300 * dt)
+    elif light_level > light_target:
+        light_level = max(light_target, light_level - 300 * dt)
+
+    # -------------------------------------------------------------------
+    # [실효 광량 계산]
+    # 빛은 게임이 랜덤하게 계속 바꾸고(light_level), 그걸 그림자(shadow_level)가
+    # 얼마나 막아주느냐에 따라 식물이 "실제로 받는" 빛의 양이 달라짐.
+    # -------------------------------------------------------------------
+    effective_light = light_level - shadow_level
+    effective_light = max(0, min(1000, effective_light))
+
+    # -------------------------------------------------------------------
+    # [게임 상태 제어 로직]
+    # 판정 기준은 effective_light(실효 광량). 그림자는 이제 플레이어가 직접 조절.
+    # -------------------------------------------------------------------
+    if growth < 100 and stress < 100:
+        if effective_light > TOO_BRIGHT:
+            status_msg = "너무 뜨거워요! 그림자를 올려주세요! (UP)"
+            status_color = RED
+            stress = min(100, stress + 20 * dt)
+        elif effective_light < TOO_DARK:
+            status_msg = "너무 어두워요! 그림자를 내려주세요! (DOWN)"
+            status_color = RED
+            stress = min(100, stress + 15 * dt)
+        else:
+            status_msg = "딱 좋아요! 식물이 쑥쑥 자라는 중입니다!"
+            status_color = GREEN
+            growth = min(100, growth + 5 * dt)
+            stress = max(0, stress - 8 * dt)
+
+    # 게임 클리어 / 엔딩 처리
+    if stress >= 100:
+        status_msg = "식물이 말라죽었습니다... (Game Over)"
+        status_color = BLACK
+        game_state = "END"
+    elif growth >= 100:
+        status_msg = "축하합니다! 예쁜 꽃이 피었습니다! (Success)"
+        status_color = GREEN
+        game_state = "END"
+
+    # -------------------------------------------------------------------
+    # [화면 그래픽 렌더링]
+    # -------------------------------------------------------------------
+    screen.fill(SKY_BLUE)
+
+    msg_surface = font_large.render(status_msg, True, status_color)
+    screen.blit(msg_surface, (WIDTH // 2 - msg_surface.get_width() // 2, 30))
+
+    draw_bar(screen, 40, 440, 150, 18, light_level, 1000, YELLOW, "원시 빛(Light)")
+    draw_bar(screen, 230, 440, 150, 18, shadow_level, 1000, GRAY, "그림자(Shadow)")
+    draw_bar(screen, 420, 440, 150, 18, effective_light, 1000, (255, 165, 0), "실효 광량")
+    draw_bar(screen, 40, 520, 340, 20, growth, 100, GREEN, "성장도 (Growth)")
+    draw_bar(screen, 420, 520, 340, 20, stress, 100, RED, "스트레스 (Stress)")
+
+    plant_x, plant_y = WIDTH // 2, 300
+    plant_radius = int(20 + (growth * 0.8))
+
+    pygame.draw.polygon(screen, BROWN, [
+        (plant_x - 40, plant_y + 40),
+        (plant_x + 40, plant_y + 40),
+        (plant_x + 25, plant_y + 90),
+        (plant_x - 25, plant_y + 90)
+    ])
+
+    if stress >= 100:
+        plant_color = (110, 80, 50)
+    elif growth >= 100:
+        plant_color = (255, 105, 180)
+    else:
+        plant_color = GREEN
+
+    pygame.draw.circle(screen, plant_color, (plant_x, plant_y - plant_radius), plant_radius)
+
+    help_text = font_small.render("[조작] 방향키 위(UP): 그림자 올리기 | 방향키 아래(DOWN): 그림자 내리기  (빛은 랜덤 변화)", True, BLACK)
+    screen.blit(help_text, (WIDTH // 2 - help_text.get_width() // 2, 570))
+
+    pygame.display.flip()
+
+pygame.quit()
+sys.exit()
